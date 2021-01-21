@@ -204,11 +204,13 @@ def get_date_time():
 def main():
 
     readout_listener = ReadoutListener()
+    root_recorder = None
 
     while True:
-        print('Waiting for a connection')
-        connection, client_address = readout_listener.sock.accept()
+        connection = None
         try:
+            print('Waiting for a connection')
+            connection, client_address = readout_listener.sock.accept()
             print(f'Connection from {socket.gethostbyaddr(client_address[0])[0]} {client_address}')
             buffer_size = 1024
             data = connection.recv(buffer_size).decode().rstrip()
@@ -221,8 +223,15 @@ def main():
                 root_recorder.stop()
                 print('\n', end = '')
                 assert(run_number == root_recorder.run_number)
+        except KeyboardInterrupt as exception:
+            print('\n')
+            print(type(exception).__name__)
+            if root_recorder:
+                root_recorder.stop()
+            break
         finally:
-            connection.close()
+            if connection:
+                connection.close()
 
 if __name__ == '__main__':
     main()
