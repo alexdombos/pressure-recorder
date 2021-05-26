@@ -28,21 +28,27 @@ class Baratron:
         #buffer_size = 1024
         #data = self.sock.recv(buffer_size).decode()
         data = self.sockfile.readline()
+        # Since only one sensor is being used, the second reading will be "Off"
+        # Therefore, examples of received data are:
+        # "973.1e+0 Off"
+        # "-10.8e+0 Off"
+        # "- 9.1e+0 Off" (note the space between minus sign and number!)
         entries = data.strip().split()
-        if len(entries) != 3:
-            raise RuntimeError(f'Baratron entries: Expected 3, got {len(entries)}\n'
+        if len(entries) not in (2, 3):
+            raise RuntimeError(f'Baratron entries: Expected 2 or 3, got {len(entries)}\n'
                                f"{'':14}Anomalous entries were {entries}")
-        sign = entries[0]
-        value = float(entries[1])
-        status = entries[2]
-        if sign not in ('-', '+'):
-            raise TypeError(f"Baratron sign (first entry): Expected '-' or '+', got '{sign}'\n"
+        reading_1 = entries[:-1]
+        reading_2 = entries[-1]
+        if reading_2 != 'Off':
+            raise TypeError(f'Baratron entries: Expected second sensor to be "Off"\n'
                             f"{'':11}Anomalous entries were {entries}")
-        if status not in ('Off', 'On'):
-            raise TypeError(f"Baratron status (last entry): Expected 'Off' or 'On', got '{status}'\n"
-                            f"{'':11}Anomalous entries were {entries}")
-        pressure = -1.0 * value if sign == '-' else value
-        return pressure
+        if len(reading_1) == 1:
+            return float(reading_1[0])
+        else:
+            if reading_1[0] != '-':
+                raise TypeError(f'Baratron entries: Expected "-", got {reading_1[0]}\n'
+                                f"{'':11}Anomalous entries were {entries}")
+            return -1.0 * float(reading_1[1])
 
 VacuumGauge = namedtuple(typename = 'VacuumGauge',
                          field_names = ['ionization_gauge',
